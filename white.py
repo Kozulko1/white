@@ -3,7 +3,7 @@ import sys
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
-from src.formatter import TrailingWhitespaceFormatter
+from src.formatter import TabsFormatter,TrailingWhitespaceFormatter
 from src.python_file import PythonFile
 from src.repair_shop import PythonRepairShop
 
@@ -29,7 +29,7 @@ def main(args: Namespace) -> int:
         with PythonFile(file_path) as file:
             python_files.append(file)
 
-    formatters = [TrailingWhitespaceFormatter()]
+    formatters = [TrailingWhitespaceFormatter(), TabsFormatter()]
     repair_shop = PythonRepairShop(formatters)
 
     save_files([repair_shop.repair_file(file) for file in python_files])
