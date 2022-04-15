@@ -29,6 +29,9 @@ class PythonFile:
     def set_new_file_path(self, file_path: Path) -> None:
         self.__file_path = file_path
 
+    def __eq__(self, __o: PythonFile) -> bool:
+        return self.__lines == __o.__lines
+
     def __enter__(self) -> PythonFile:
         self.__file = open(self.__file_path, "r")
         self.__lines: list = self.__file.readlines()
