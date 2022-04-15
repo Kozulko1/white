@@ -6,10 +6,11 @@ from .python_file import PythonFile
 
 
 WHITESPACE_PATTERN = r"[ \t]+(\r?$)"
+FUNCTION_PROTOTYPE_PATTERN = r"\s*def\s+.*"
 
 class Formatter(ABC):
     @abstractmethod
-    def format(file: PythonFile) -> PythonFile:
+    def format(self, file: PythonFile) -> PythonFile:
         pass
 
 
@@ -47,3 +48,57 @@ class TabsFormatter(Formatter):
             if '"' in string[idx:] or "'" in string[idx:]:
                 return True
         return False
+
+class LineLengthFormatter(Formatter):
+    def __init__(self, length_limit: int) -> None:
+        self.length_limit = length_limit
+
+    def format(self, file: PythonFile) -> PythonFile:
+        formatted_lines = []
+        file_lines = file.get_lines()
+        counter = 0
+        while(counter < len(file_lines)):
+            line: str = file_lines[counter]
+            if len(line) < self.length_limit:
+                formatted_lines.append(file_lines[counter])
+                counter += 1
+                continue
+            if self.__check_if_function_prototype(line):
+                num_of_spaces = line.index("d")
+                if self.__check_if_params_exceed_limit(self.__single_out_function_params(line), num_of_spaces+4):
+                    self.__append_exceeding_function(formatted_lines, line, num_of_spaces)
+                else:
+                    self.__append_unexceeding_function(formatted_lines, line, num_of_spaces)
+                continue
+
+    def __check_if_function_prototype(self, line: str) -> bool:
+        if re.search(FUNCTION_PROTOTYPE_PATTERN, line):
+            return True
+        return False
+
+    def __single_out_function_params(self, line: str) -> str:
+        return line[line.index("(")+1:line.index(")")]
+
+    def __check_if_params_exceed_limit(self, params: str, num_of_spaces: int) -> bool:
+        if (len(params) + num_of_spaces) < self.length_limit:
+            return False
+        return True
+
+    def __get_spaces(self, num_of_spaces: int) -> str:
+        output = ""
+        while(num_of_spaces > 0):
+            output += " "
+            num_of_spaces -= 1
+        return output
+
+    def __append_unexceeding_function(self, formatted_lines: list, line: str, num_of_spaces: int) -> None:
+        formatted_lines.append(line[:line.index("(")+1])
+        formatted_lines.append(f"{self.__get_spaces(num_of_spaces + 4)}{self.__single_out_function_params(line)}")
+        formatted_lines.append(f"{self.__get_spaces(num_of_spaces)})")
+
+    def __append_exceeding_function(self, formatted_lines: list, line: str, num_of_spaces: int) -> None:
+        formatted_lines.append(line[:line.index("(")+1])
+        for param in self.__single_out_function_params(line).split(","):
+            param = param[len(param)-len(param.lstrip()):]
+            formatted_lines.append(f"{self.__get_spaces(num_of_spaces + 4)}{param},")
+        formatted_lines.append(f"{self.__get_spaces(num_of_spaces)})")
