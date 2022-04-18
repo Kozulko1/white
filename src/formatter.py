@@ -122,22 +122,22 @@ class LineLengthFormatter(Formatter):
     def __append_unexceeding_function(
         self, formatted_lines: list, line: str, num_of_spaces: int
     ) -> None:
-        formatted_lines.append(line[: line.index("(") + 1])
+        formatted_lines.append(f'{line[: line.index("(") + 1]}\n')
         formatted_lines.append(
-            f"{self.__get_spaces(num_of_spaces + 4)}{self.__single_out_function_params(line)}"
+            f"{self.__get_spaces(num_of_spaces + 4)}{self.__single_out_function_params(line)}\n"
         )
-        formatted_lines.append(f"{self.__get_spaces(num_of_spaces)})")
+        formatted_lines.append(f"{self.__get_spaces(num_of_spaces)}):\n")
 
     def __append_exceeding_function(
         self, formatted_lines: list, line: str, num_of_spaces: int
     ) -> None:
-        formatted_lines.append(line[: line.index("(") + 1])
+        formatted_lines.append(f'{line[: line.index("(") + 1]}\n')
         for param in self.__single_out_function_params(line).split(","):
             param = param[len(param) - len(param.lstrip()) :]
             formatted_lines.append(
-                f"{self.__get_spaces(num_of_spaces + 4)}{param},"
+                f"{self.__get_spaces(num_of_spaces + 4)}{param},\n"
             )
-        formatted_lines.append(f"{self.__get_spaces(num_of_spaces)})")
+        formatted_lines.append(f"{self.__get_spaces(num_of_spaces)}):\n")
 
     def __append_non_function_prototype_exceeding_line(
         self, formatted_lines: list, line: str
@@ -145,7 +145,7 @@ class LineLengthFormatter(Formatter):
         num_of_spaces = len(line) - len(line.lstrip())
         if "(" in line[: self.length_limit]:
             idx = line[: self.length_limit].rindex("(")
-            formatted_lines.append(line[: idx + 1])
+            formatted_lines.append(f"{line[: idx + 1]}\n")
             self.__append_exceeded_parenthesis_line(
                 formatted_lines, line[idx + 1 :, num_of_spaces]
             )
@@ -160,7 +160,7 @@ class LineLengthFormatter(Formatter):
             and line[len(line) - 1] == ")"
         ):
             formatted_lines.append(
-                f"{self.__get_spaces(num_of_spaces + 4)}{line[:len(line)-1]}"
+                f"{self.__get_spaces(num_of_spaces + 4)}{line[:len(line)-1]}\n"
             )
             formatted_lines.append(f"{self.__get_spaces(num_of_spaces)})")
         else:

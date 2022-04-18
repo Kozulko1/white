@@ -1,7 +1,7 @@
-from re import I
 import sys
 
 from argparse import ArgumentParser, Namespace
+from copy import copy
 from pathlib import Path
 
 from src.formatter import (
@@ -70,9 +70,9 @@ def main(args: Namespace) -> int:
         LineLengthFormatter(int(args.line_length)),
     ]
     repair_shop = PythonRepairShop(formatters)
-    repaired_files = [repair_shop.repair_file(file) for file in python_files]
+    repaired_files = [repair_shop.repair_file(copy(file)) for file in python_files]
     changed_files = get_changed_files(python_files, repaired_files)
-    save_files(repaired_files)
+    save_files(changed_files)
     return 0
 
 
