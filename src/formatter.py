@@ -14,6 +14,9 @@ class Formatter(ABC):
     def format(self, file: PythonFile) -> PythonFile:
         pass
 
+    def _remove_starting_whitespace_from_string(self, line: str) -> str:
+        return line[len(line) - len(line.lstrip()) :]
+
 
 class TrailingWhitespaceFormatter(Formatter):
     def format(self, file: PythonFile) -> PythonFile:
@@ -26,8 +29,10 @@ class TrailingWhitespaceFormatter(Formatter):
 class TabsFormatter(Formatter):
     def format(self, file: PythonFile) -> PythonFile:
         file.update_lines(
-            [self.__replace_tabs_with_spaces(line, -1)
-            for line in file.get_lines()]
+            [
+                self.__replace_tabs_with_spaces(line, -1)
+                for line in file.get_lines()
+            ]
         )
         return file
 
@@ -62,6 +67,41 @@ class TabsFormatter(Formatter):
         return False
 
 
+class ImportsFormatter(Formatter):
+    def format(self, file: PythonFile) -> PythonFile:
+        num_of_import_lines = 0
+        file_lines = file.get_lines()
+        contains_from_import = False
+        for line in file_lines:
+            if self._remove_starting_whitespace_from_string(line).startswith(
+                "import"
+            ):
+                file_lines.insert(
+                    num_of_import_lines,
+                    self._remove_starting_whitespace_from_string(
+                        file_lines.pop(file_lines.index(line))
+                    ),
+                )
+                num_of_import_lines += 1
+            elif (
+                self._remove_starting_whitespace_from_string(line).startswith(
+                    "from"
+                )
+                and "import" in line
+            ):
+                file_lines.insert(
+                    num_of_import_lines,
+                    self._remove_starting_whitespace_from_string(
+                        file_lines.pop(file_lines.index(line))
+                    ),
+                )
+                contains_from_import = True
+        if contains_from_import:
+            file_lines.insert(num_of_import_lines, "\n")
+        file.update_lines(file_lines)
+        return file
+
+
 class LineLengthFormatter(Formatter):
     def __init__(self, length_limit: int) -> None:
         self.length_limit = length_limit
@@ -90,6 +130,7 @@ class LineLengthFormatter(Formatter):
                     )
                 counter += 1
                 continue
+            # imports TODO
             self.__append_non_function_prototype_exceeding_line(
                 formatted_lines, line
             )

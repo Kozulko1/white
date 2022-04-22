@@ -3,6 +3,7 @@ import logging
 
 from io import TextIOWrapper
 from pathlib import Path
+from typing import List
 
 
 class PythonFile:
@@ -13,7 +14,7 @@ class PythonFile:
     def get_file_path(self) -> Path:
         return self.__file_path
 
-    def get_lines(self) -> list:
+    def get_lines(self) -> List[str]:
         try:
             return self.__lines
         except:
@@ -23,7 +24,7 @@ class PythonFile:
         with open(self.__file_path, "w") as file:
             [file.write(line) for line in self.__lines]
 
-    def update_lines(self, new_lines: list) -> None:
+    def update_lines(self, new_lines: List[str]) -> None:
         self.__lines = new_lines
 
     def set_new_file_path(self, file_path: Path) -> None:
