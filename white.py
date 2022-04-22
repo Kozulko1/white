@@ -1,10 +1,11 @@
-from re import I
 import sys
 
 from argparse import ArgumentParser, Namespace
+from copy import copy
 from pathlib import Path
 
 from src.formatter import (
+    ImportsFormatter,
     LineLengthFormatter,
     TabsFormatter,
     TrailingWhitespaceFormatter,
@@ -34,14 +35,6 @@ def check_line_length(line_length: int) -> bool:
     return True
 
 
-def get_changed_files(old: list, new: list):
-    output = []
-    for idx in range(len(old)):
-        if old[idx] != new[idx]:
-            output.append(new[idx])
-    return output
-
-
 def load_python_filepaths(directory: Path) -> list:
     return [path for path in directory.rglob("*.py")]
 
@@ -67,12 +60,19 @@ def main(args: Namespace) -> int:
     formatters = [
         TrailingWhitespaceFormatter(),
         TabsFormatter(),
+        ImportsFormatter(),
         LineLengthFormatter(int(args.line_length)),
     ]
     repair_shop = PythonRepairShop(formatters)
-    repaired_files = [repair_shop.repair_file(file) for file in python_files]
-    changed_files = get_changed_files(python_files, repaired_files)
-    save_files(repaired_files)
+    repaired_files = [
+        repair_shop.repair_file(copy(file)) for file in python_files
+    ]
+    changed_files = [
+        repaired_files[idx]
+        for idx in range(len(repaired_files))
+        if repaired_files[idx] != python_files[idx]
+    ]
+    save_files(changed_files)
     return 0
 
 
