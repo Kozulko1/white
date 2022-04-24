@@ -1,7 +1,7 @@
-# White - Python formatter
+# White - Python formatter (Python course project exercise)
 
 ## Instructions:
-- clone repo and move to its root
+- clone the repo
 - required arguments:
 ```
 --directory_path -> path to directory where .*py files are kept
