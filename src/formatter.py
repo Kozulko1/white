@@ -1,6 +1,7 @@
 import re
 
 from abc import ABC, abstractmethod
+from typing import List
 
 from .python_file import PythonFile
 
@@ -98,8 +99,44 @@ class ImportsFormatter(Formatter):
                 contains_from_import = True
         if contains_from_import:
             file_lines.insert(num_of_import_lines, "\n")
+        if num_of_import_lines:
+            file_lines = self.__handle_comma_imports(
+                file_lines, num_of_import_lines
+            )
         file.update_lines(file_lines)
         return file
+
+    def __handle_comma_imports(
+        self, lines: List[str], imports_num: int
+    ) -> None:
+        idx_increment = 0
+        updated_lines = lines.copy()
+        for idx in range(imports_num):
+            if "," in lines[idx]:
+                separated_imports = self.__get_separated_imports_from_line(
+                    lines[idx][7:]
+                )
+                del updated_lines[idx + idx_increment]
+                updated_lines[
+                    idx + idx_increment : idx + idx_increment
+                ] = separated_imports
+                idx_increment = idx_increment + len(separated_imports) - 1
+        return updated_lines
+
+    def __get_separated_imports_from_line(self, line: str) -> List[str]:
+        imports = line.split(",")
+        for part in imports:
+            if "\n" in part:
+                imports.insert(
+                    imports.index(part),
+                    f"import {imports.pop(imports.index(part)).replace(' ', '')}",
+                )
+            else:
+                imports.insert(
+                    imports.index(part),
+                    f"import {imports.pop(imports.index(part)).replace(' ', '')}\n",
+                )
+        return imports
 
 
 class LineLengthFormatter(Formatter):
@@ -161,7 +198,7 @@ class LineLengthFormatter(Formatter):
         return output
 
     def __append_unexceeding_function(
-        self, formatted_lines: list, line: str, num_of_spaces: int
+        self, formatted_lines: List[str], line: str, num_of_spaces: int
     ) -> None:
         formatted_lines.append(f'{line[: line.index("(") + 1]}\n')
         formatted_lines.append(
@@ -170,18 +207,18 @@ class LineLengthFormatter(Formatter):
         formatted_lines.append(f"{self.__get_spaces(num_of_spaces)}):\n")
 
     def __append_exceeding_function(
-        self, formatted_lines: list, line: str, num_of_spaces: int
+        self, formatted_lines: List[str], line: str, num_of_spaces: int
     ) -> None:
         formatted_lines.append(f'{line[: line.index("(") + 1]}\n')
         for param in self.__single_out_function_params(line).split(","):
-            param = param[len(param) - len(param.lstrip()) :]
+            param = self._remove_starting_whitespace_from_string(param)
             formatted_lines.append(
                 f"{self.__get_spaces(num_of_spaces + 4)}{param},\n"
             )
         formatted_lines.append(f"{self.__get_spaces(num_of_spaces)}):\n")
 
     def __append_non_function_prototype_exceeding_line(
-        self, formatted_lines: list, line: str
+        self, formatted_lines: List[str], line: str
     ) -> None:
         num_of_spaces = len(line) - len(line.lstrip())
         if "(" in line[: self.length_limit]:
@@ -194,7 +231,7 @@ class LineLengthFormatter(Formatter):
             pass  # TODO
 
     def __append_exceeded_parenthesis_line(
-        self, formatted_lines: list, line: str, num_of_spaces: int
+        self, formatted_lines: List[str], line: str, num_of_spaces: int
     ) -> None:
         if (
             len(line + num_of_spaces + 4) < self.length_limit
