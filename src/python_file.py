@@ -42,7 +42,4 @@ class PythonFile:
         self.__file.close()
 
     def __str__(self):
-        output = ""
-        for line in self.__lines:
-            output += line
-        return output
+        return "".join(self.__lines)
