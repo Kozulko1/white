@@ -15,9 +15,6 @@ class Formatter(ABC):
     def format(self, file: PythonFile) -> PythonFile:
         pass
 
-    def _remove_starting_whitespace_from_string(self, line: str) -> str:
-        return line[len(line) - len(line.lstrip()) :]
-
 
 class TrailingWhitespaceFormatter(Formatter):
     def format(self, file: PythonFile) -> PythonFile:
@@ -74,27 +71,16 @@ class ImportsFormatter(Formatter):
         file_lines = file.get_lines()
         contains_from_import = False
         for line in file_lines:
-            if self._remove_starting_whitespace_from_string(line).startswith(
-                "import"
-            ):
+            if line.lstrip().startswith("import"):
                 file_lines.insert(
                     num_of_import_lines,
-                    self._remove_starting_whitespace_from_string(
-                        file_lines.pop(file_lines.index(line))
-                    ),
+                    file_lines.pop(file_lines.index(line)).lstrip(),
                 )
                 num_of_import_lines += 1
-            elif (
-                self._remove_starting_whitespace_from_string(line).startswith(
-                    "from"
-                )
-                and "import" in line
-            ):
+            elif line.lstrip().startswith("from") and "import" in line:
                 file_lines.insert(
                     num_of_import_lines,
-                    self._remove_starting_whitespace_from_string(
-                        file_lines.pop(file_lines.index(line))
-                    ),
+                    file_lines.pop(file_lines.index(line)).lstrip(),
                 )
                 contains_from_import = True
         if contains_from_import:
@@ -139,6 +125,10 @@ class ImportsFormatter(Formatter):
         return imports
 
 
+class WhiteSpaceFormatter(Formatter):
+    pass
+
+
 class LineLengthFormatter(Formatter):
     def __init__(self, length_limit: int) -> None:
         self.length_limit = length_limit
@@ -167,10 +157,11 @@ class LineLengthFormatter(Formatter):
                     )
                 counter += 1
                 continue
-            # imports TODO
-            self.__append_non_function_prototype_exceeding_line(
-                formatted_lines, line
-            )
+            if line.startswith("from ") and " import " in line:
+                self.__append_from_import_exceeding_line(formatted_lines, line)
+                counter += 1
+                continue
+            self.__append_ordinary_exceeding_line(formatted_lines, line)
             counter += 1
         file.update_lines(formatted_lines)
         return file
@@ -211,13 +202,13 @@ class LineLengthFormatter(Formatter):
     ) -> None:
         formatted_lines.append(f'{line[: line.index("(") + 1]}\n')
         for param in self.__single_out_function_params(line).split(","):
-            param = self._remove_starting_whitespace_from_string(param)
+            param = param.lstrip()
             formatted_lines.append(
                 f"{self.__get_spaces(num_of_spaces + 4)}{param},\n"
             )
         formatted_lines.append(f"{self.__get_spaces(num_of_spaces)}):\n")
 
-    def __append_non_function_prototype_exceeding_line(
+    def __append_ordinary_exceeding_line(
         self, formatted_lines: List[str], line: str
     ) -> None:
         num_of_spaces = len(line) - len(line.lstrip())
@@ -243,3 +234,12 @@ class LineLengthFormatter(Formatter):
             formatted_lines.append(f"{self.__get_spaces(num_of_spaces)})")
         else:
             pass  # TODO
+
+    def __append_from_import_exceeding_line(
+        self, formatted_lines: List[str], line: str
+    ) -> None:
+        import_idx = line.index("import") + 6
+        formatted_lines.append(f"{line[:import_idx]}(\n")
+        for package in line[import_idx:].split(","):
+            formatted_lines.append(f"    {package.strip()},\n")
+        formatted_lines.append(")\n")
